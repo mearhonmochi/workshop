@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ player_name }} เล่นในห้อง {{ room_code }} - Fast Finger</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #282c34;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-area {
+            text-align: center;
+            background-color: #3a3f47;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 {
+            color: #a366ff;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.1em;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+        .game-button {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background-color: #dc3545; /* Red (WAIT) */
+            border: none;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            color: white;
+            font-weight: bold;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+        .game-button:active {
+            transform: scale(0.95);
+        }
+        .game-button.red { background-color: #dc3545; } /* Waiting */
+        .game-button.gray { background-color: #6c757d; cursor: not-allowed; } /* Foul */
+        .game-button.green { background-color: #28a745; } /* Buzz! */
+        .game-button.blue { background-color: #007bff; cursor: not-allowed; } /* Done */
+
+        .status-text {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffc107; /* Yellow for WAIT */
+            min-height: 1.5em; /* Prevent layout shift */
+        }
+        .status-text.waiting { color: #ffc107; }
+        .status-text.foul { color: #dc3545; }
+        .status-text.buzz { color: #28a745; }
+        .status-text.done { color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="game-area">
+        <h2>สวัสดี, {{ player_name }}!</h2>
+        <p>คุณอยู่ในห้อง: <strong>{{ room_code }}</strong></p>
+
+        <button id="game-button" class="game-button red"></button>
+        <p id="status-text" class="status-text waiting">WAIT</p>
+    </div>
+
+    <script type="text/javascript">
+        const roomCode = "{{ room_code }}";
+        const playerName = "{{ player_name }}";
+        const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port, {
+            query: { room_code: roomCode, player_name: playerName, is_host: false }
+        });
+
+        const gameButton = document.getElementById('game-button');
+        const statusText = document.getElementById('status-text');
+
+        let currentPlayerStatus = 'waiting'; // Initial state
+
+        // Function to update button and text based on game status
+        function updatePlayerUI(status) {
+            currentPlayerStatus = status;
+            gameButton.className = 'game-button'; // Reset classes
+            statusText.className = 'status-text'; // Reset classes
+
+            switch (status) {
+                case 'waiting':
+                    gameButton.classList.add('red');
+                    gameButton.textContent = '';
+                    statusText.classList.add('waiting');
+                    statusText.textContent = 'WAIT';
+                    gameButton.disabled = false; // Player can press for foul
+                    break;
+                case 'foul':
+                    gameButton.classList.add('gray');
+                    gameButton.textContent = '';
+                    statusText.classList.add('foul');
+                    statusText.textContent = 'FAUL';
+                    gameButton.disabled = true; // Cannot press after foul
+                    break;
+                case 'started': // This is when host starts, player needs to buzz
+                    gameButton.classList.add('green');
+                    gameButton.textContent = '';
+                    statusText.classList.add('buzz');
+                    statusText.textContent = 'BUZZ!';
+                    gameButton.disabled = false; // Can buzz now
+                    break;
+                case 'done':
+                    gameButton.classList.add('blue');
+                    gameButton.textContent = '';
+                    statusText.classList.add('done');
+                    statusText.textContent = 'DONE';
+                    gameButton.disabled = true; // Cannot press after success
+                    break;
+                default:
+                    // Fallback to waiting if unknown status
+                    gameButton.classList.add('red');
+                    statusText.classList.add('waiting');
+                    statusText.textContent = 'WAIT';
+                    gameButton.disabled = false;
+            }
+        }
+
+        socket.on('connect', function() {
+            console.log('Player connected to Socket.IO');
+            // Backend will send initial game state after connect, so no need to set here
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Player disconnected from Socket.IO');
+            statusText.textContent = 'Disconnected. Attempting to reconnect...';
+            statusText.classList.remove('waiting', 'foul', 'buzz', 'done');
+        });
+
+        // Initial game state from server when player first connects
+        socket.on('game_state_update', function(data) {
+            console.log('Initial game state received:', data);
+            updatePlayerUI(data.status === 'started' ? 'started' : 'waiting');
+        });
+        
+        // Update player's own status (foul, done)
+        socket.on('player_status_update', function(data) {
+            if (data.player_sid === socket.id) { // Ensure this update is for the current player
+                console.log('My status updated:', data.status);
+                updatePlayerUI(data.status);
+            }
+        });
+
+        socket.on('redirect', function(data) {
+            window.location.href = data.url;
+        });
+
+        socket.on('host_disconnected', function(data) {
+            statusText.textContent = data.message;
+            statusText.classList.remove('buzz', 'done');
+            statusText.classList.add('foul'); // Use foul color for warning
+            gameButton.disabled = true; // Disable button if host is gone
+        });
+
+        gameButton.addEventListener('click', function() {
+            if (!gameButton.disabled) {
+                // Emit 'player_buzz' event to the server
+                socket.emit('player_buzz', { room_code: roomCode });
+                // Optimistically update UI to 'done' or 'foul' client-side
+                // The server will confirm the actual status via 'player_status_update'
+                // This client-side update makes it feel faster.

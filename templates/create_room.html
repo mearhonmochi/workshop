@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สร้างห้อง - Fast Finger</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Basic styling for form pages */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #282c34;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .form-container {
+            background-color: #3a3f47;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            color: #61dafb;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #e0e0e0;
+        }
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 12px 10px;
+            border: 1px solid #555;
+            border-radius: 8px;
+            background-color: #4c525a;
+            color: #ffffff;
+            font-size: 1.1em;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #61dafb;
+        }
+        .button {
+            width: 100%;
+            padding: 15px 0;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #007bff, #00c6ff);
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.6);
+        }
+        .error-message {
+            color: #ff6b6b;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+            text-align: center;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-top: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>สร้างห้อง (Create Room)</h2>
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+        <form action="{{ url_for('create_room') }}" method="POST">
+            <div class="form-group">
+                <label for="room_name">ชื่อห้อง (Room Name)</label>
+                <input type="text" id="room_name" name="room_name" placeholder="ชื่อห้องของคุณ" required maxlength="30">
+                <p class="note">ชื่อห้องต้องไม่ว่างเปล่า และยาวไม่เกิน 30 ตัวอักษร</p>
+            </div>
+            <button type="submit" class="button">สร้างห้อง (Create)</button>
+        </form>
+    </div>
+</body>
+</html>

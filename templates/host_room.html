@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ห้อง {{ room_name }} (Host) - Fast Finger</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #282c34;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #3a3f47;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #61dafb;
+            font-size: 2.8em;
+            margin-bottom: 10px;
+        }
+        .room-info {
+            font-size: 1.2em;
+            color: #ccc;
+        }
+        .room-info strong {
+            color: #fff;
+        }
+        .sections {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .section {
+            background-color: #4c525a;
+            border-radius: 10px;
+            padding: 20px;
+            flex: 1;
+            min-width: 300px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        h3 {
+            color: #61dafb;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 2px solid #61dafb;
+            padding-bottom: 10px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            padding: 10px 0;
+            border-bottom: 1px solid #5a626a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li:last-child {
+            border-bottom: none;
+        }
+        .player-status {
+            font-size: 0.9em;
+            padding: 4px 8px;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #777;
+        }
+        .status-waiting { background-color: #007bff; } /* Blue */
+        .status-foul { background-color: #dc3545; } /* Red */
+        .status-done { background-color: #28a745; } /* Green */
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .control-button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .start-button {
+            background: linear-gradient(135deg, #28a745, #218838);
+        }
+        .start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
+        .reset-button {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+        }
+        .reset-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 193, 7, 0.4);
+        }
+        .game-status-message {
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #ffc107;
+            text-align: center;
+        }
+        .results-item {
+            font-size: 1.1em;
+        }
+        .results-item span:first-child {
+            font-weight: bold;
+        }
+        .results-item span:last-child {
+            color: #61dafb;
+            font-weight: bold;
+        }
+.share-room-code {
+            margin-top: 20px;
+            font-size: 1.1em;
+            background-color: #5a626a;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .share-room-code strong {
+            color: #61dafb;
+            font-size: 1.3em;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ห้อง {{ room_name }}</h1>
+            <p class="room-info">รหัสห้อง: <strong id="room-code-display">{{ room_code }}</strong></p>
+            <div class="share-room-code">
+                แชร์รหัสนี้ให้เพื่อนของคุณ: <strong>{{ room_code }}</strong>
+            </div>
+            <p id="game-status-message" class="game-status-message">รอผู้เล่นและ Host กดเริ่มเกม...</p>
+        </div>
+
+        <div class="sections">
+            <div class="section player-list-section">
+                <h3>ผู้เล่นที่เข้าร่วม (Players Joined)</h3>
+                <ul id="player-list">
+                    <!-- Player list will be updated by JavaScript -->
+                    <li id="no-players-message">ไม่มีผู้เล่นเข้าร่วม</li>
+                </ul>
+            </div>
+
+            <div class="section game-results-section">
+                <h3>ผลการแข่งขัน (Submissions)</h3>
+                <ul id="game-results">
+                    <!-- Game results will be updated by JavaScript -->
+                    <li id="no-results-message">ยังไม่มีผลการแข่งขัน</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="start-game-btn" class="control-button start-button">Start Game</button>
+            <button id="reset-game-btn" class="control-button reset-button">Reset Game</button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const roomCode = "{{ room_code }}";
+        const socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port, {
+            query: { room_code: roomCode, is_host: true }
+        });
+
+        const playerListElem = document.getElementById('player-list');
+        const gameResultsElem = document.getElementById('game-results');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const resetGameBtn = document.getElementById('reset-game-btn');
+        const gameStatusMessage = document.getElementById('game-status-message');
+
+        socket.on('connect', function() {
+            console.log('Host connected to Socket.IO');
+            gameStatusMessage.textContent = 'Host เชื่อมต่อแล้ว, รอผู้เล่นเข้าร่วม...';
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Host disconnected from Socket.IO');
+            gameStatusMessage.textContent = 'Host หลุดการเชื่อมต่อ. โปรดโหลดหน้าใหม่.';
+        });
+
+        socket.on('player_list_update', function(players) {
+            console.log('Player list updated:', players);
+            playerListElem.innerHTML = ''; // Clear existing list
+            if (players.length === 0) {
+                playerListElem.innerHTML = '<li id="no-players-message">ไม่มีผู้เล่นเข้าร่วม</li>';
+            } else {
+                players.forEach(function(player) {
+                    const listItem = document.createElement('li');
+                    listItem.innerHTML = `
+                        <span>${player.name}</span>
+                        <span class="player-status status-${player.status}">${player.status.toUpperCase()}</span>
+                    `;
+                    playerListElem.appendChild(listItem);
+                });
+            }
+        });
+
+        socket.on('game_results_update', function(results) {
+            console.log('Game results updated:', results);
+            gameResultsElem.innerHTML = ''; // Clear existing results
+            if (results.length === 0) {
+                gameResultsElem.innerHTML = '<li id="no-results-message">ยังไม่มีผลการแข่งขัน</li>';
+            } else {
+                results.forEach(function(result) {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('results-item');
+                    listItem.innerHTML = `
+                        <span>${result.name}</span> — <span>${result.reaction_time.toFixed(3)}s</span>
+                    `;
+                    gameResultsElem.appendChild(listItem);
+                });
+            }
+        });
+
+        socket.on('game_state_update', function(data) {
+            console.log('Game state updated:', data);
+            if (data.status === 'started') {
+                gameStatusMessage.textContent = 'เกมเริ่มแล้ว! ผู้เล่นกำลังแข่งขัน...';
+                startGameBtn.disabled = true;
+                resetGameBtn.disabled = false;
+            } else if (data.status === 'waiting') {
+                gameStatusMessage.textContent = 'รอ Host เริ่มเกม...';
+                startGameBtn.disabled = false;
+                resetGameBtn.disabled = true;
+            }
+        });
+
+        socket.on('error', function(data) {
+            alert('Error: ' + data.message);
+        });
+
+        startGameBtn.addEventListener('click', function() {
+            socket.emit('start_game', { room_code: roomCode });
+        });
+
+        resetGameBtn.addEventListener('click', function() {
+            socket.emit('reset_game', { room_code: roomCode });
+        });
+
+        // Initial state when page loads (assuming 'waiting' or whatever the backend sends)
+        // This will be handled by 'game_state_update' when host connects
+    </script>
+</body>
+</html>

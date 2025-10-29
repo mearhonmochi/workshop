@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าร่วมห้อง - Fast Finger</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Shared styling for form pages */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #282c34;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .form-container {
+            background-color: #3a3f47;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            color: #a366ff; /* Adjusted for join page */
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            color: #e0e0e0;
+        }
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 12px 10px;
+            border: 1px solid #555;
+            border-radius: 8px;
+            background-color: #4c525a;
+            color: #ffffff;
+            font-size: 1.1em;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #a366ff; /* Adjusted for join page */
+        }
+        .button {
+            width: 100%;
+            padding: 15px 0;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6f42c1, #a366ff); /* Adjusted for join page */
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(111, 66, 193, 0.4); /* Adjusted for join page */
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(111, 66, 193, 0.6); /* Adjusted for join page */
+        }
+        .error-message {
+            color: #ff6b6b;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+            text-align: center;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #aaa;
+            margin-top: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>เข้าร่วม (Join Room)</h2>
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+        <form action="{{ url_for('join_room_page') }}" method="POST">
+            <div class="form-group">
+                <label for="player_name">ชื่อผู้เล่น (Player Name)</label>
+                <input type="text" id="player_name" name="player_name" placeholder="ชื่อของคุณ" required maxlength="20" value="{{ player_name if player_name }}">
+                <p class="note">ชื่อผู้เล่นต้องมีความยาว 1-20 ตัวอักษร และเป็นตัวอักษรเท่านั้น (a-z, ก-ฮ)</p>
+            </div>
+            <div class="form-group">
+                <label for="room_code">รหัสห้อง (Room Code)</label>
+                <input type="text" id="room_code" name="room_code" placeholder="เช่น A4D7F2" required maxlength="6" value="{{ room_code if room_code }}">
+            </div>
+            <button type="submit" class="button">เข้าร่วม (Join)</button>
+        </form>
+    </div>
+</body>
+</html>
